@@ -2,12 +2,12 @@
 <html lang="bg">
 <head>
   <meta charset="UTF-8" />
-  <title>Prolog животни с GIF визуализация</title>
+  <title>Животни с JS логика и GIF</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
-      background: #f0f0f0;
+      background: #fafafa;
       text-align: center;
     }
     input, button {
@@ -48,31 +48,30 @@
 </head>
 <body>
 
-  <h1>Prolog животни с GIF визуализация</h1>
-  <input type="text" id="queryInput" placeholder="Например: is_mammal(X)" />
+  <h1>Животни с JavaScript логика и GIF визуализация</h1>
+  <input type="text" id="queryInput" placeholder="Въведи заявка: is_mammal, is_big, is_predator" />
   <button onclick="runQuery()">Търси</button>
 
   <div id="result"></div>
 
-  <!-- Включваме Tau Prolog от CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/tau-prolog@0.3.1/modules/core.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tau-prolog@0.3.1/modules/lists.js"></script>
   <script>
-    // Пролог знание база
-    const prologCode = `
-      animal(elephant).
-      animal(lion).
-      animal(crocodile).
-      animal(dog).
-      animal(cat).
-      animal(whale).
+    // Данни за животните
+    const animals = ['elephant', 'lion', 'crocodile', 'dog', 'cat', 'whale'];
 
-      is_mammal(X) :- animal(X), member(X, [elephant, lion, dog, cat, whale]).
-      is_big(X) :- member(X, [elephant, lion, crocodile, whale]).
-      is_predator(X) :- member(X, [lion, crocodile, dog, cat]).
-    `;
+    // Правила, подобни на Prolog правила
+    function is_mammal(animal) {
+      return ['elephant', 'lion', 'dog', 'cat', 'whale'].includes(animal);
+    }
 
-    // GIF анимации за животните
+    function is_big(animal) {
+      return ['elephant', 'lion', 'crocodile', 'whale'].includes(animal);
+    }
+
+    function is_predator(animal) {
+      return ['lion', 'crocodile', 'dog', 'cat'].includes(animal);
+    }
+
+    // GIF за животните
     const animalAnimations = {
       elephant: 'https://media.giphy.com/media/26u4b45b8KlgAB7iM/giphy.gif',
       lion: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',
@@ -82,98 +81,56 @@
       whale: 'https://media.giphy.com/media/3o6ZsVv8gq5Rpq4GTC/giphy.gif',
     };
 
-    // Инициализиране на Prolog сесия
-    let session = null;
-
-    function initProlog() {
-      session = pl.create();
-      session.consult(prologCode, {
-        success: () => console.log('Prolog loaded'),
-        error: (err) => console.error(err)
-      });
-    }
-
-    // Изпълнение на заявка
+    // Изпълнява заявката
     function runQuery() {
       const query = document.getElementById('queryInput').value.trim();
       const resultDiv = document.getElementById('result');
       resultDiv.innerHTML = 'Търсене...';
 
       if (!query) {
-        resultDiv.innerHTML = 'Моля, въведи валидна Prolog заявка.';
+        resultDiv.innerHTML = 'Моля, въведи заявка.';
         return;
       }
 
-      // Почиства предишната сесия и създава нова
-      initProlog();
+      // Функция за филтриране според заявката
+      let filterFunc;
 
-      session.query(query, {
-        success: () => {
-          getAllAnswers([]);
-        },
-        error: (err) => {
-          resultDiv.innerHTML = 'Грешка при заявката: ' + err.toString();
+      if (query === 'is_mammal' || query === 'is_mammal(X)') {
+        filterFunc = is_mammal;
+      } else if (query === 'is_big' || query === 'is_big(X)') {
+        filterFunc = is_big;
+      } else if (query === 'is_predator' || query === 'is_predator(X)') {
+        filterFunc = is_predator;
+      } else {
+        resultDiv.innerHTML = 'Невалидна заявка. Използвай: is_mammal, is_big, is_predator.';
+        return;
+      }
+
+      // Филтриране на животните
+      const filteredAnimals = animals.filter(filterFunc);
+
+      if (filteredAnimals.length === 0) {
+        resultDiv.innerHTML = 'Няма животни, отговарящи на заявката.';
+        return;
+      }
+
+      // Показваме резултатите с GIF
+      resultDiv.innerHTML = '';
+
+      filteredAnimals.forEach(animal => {
+        const gif = animalAnimations[animal];
+        if (gif) {
+          const card = document.createElement('div');
+          card.className = 'animal-card';
+          card.innerHTML = `<img src="${gif}" alt="${animal}" class="animal-gif" /><div class="animal-name">${animal}</div>`;
+          resultDiv.appendChild(card);
+        } else {
+          const p = document.createElement('p');
+          p.textContent = animal;
+          resultDiv.appendChild(p);
         }
       });
-
-      // Рекурсивно взимане на всички решения
-      function getAllAnswers(acc) {
-        session.answer({
-          success: (answer) => {
-            // Вземаме стойността на X от отговора
-            const X = answer.lookup('X');
-            if (X) {
-              // Конвертираме Prolog атом в string
-              const animalName = X.id || X.toString();
-              acc.push(animalName);
-            }
-            getAllAnswers(acc);
-          },
-          fail: () => {
-            displayResults(acc);
-          },
-          error: (err) => {
-            resultDiv.innerHTML = 'Грешка при обработка: ' + err.toString();
-          },
-          limit: () => {
-            resultDiv.innerHTML = 'Достигнат лимит за отговори.';
-          }
-        });
-      }
-
-      // Показва резултатите с GIF
-      function displayResults(animals) {
-        if (animals.length === 0) {
-          resultDiv.innerHTML = '<p>Няма намерени животни за тази заявка.</p>';
-          return;
-        }
-
-        // Премахваме дубликатите
-        const uniqueAnimals = [...new Set(animals)];
-
-        resultDiv.innerHTML = '';
-
-        uniqueAnimals.forEach(animal => {
-          const gif = animalAnimations[animal];
-          if (gif) {
-            const card = document.createElement('div');
-            card.className = 'animal-card';
-            card.innerHTML = `<img src="${gif}" alt="${animal}" class="animal-gif" /><div class="animal-name">${animal}</div>`;
-            resultDiv.appendChild(card);
-          } else {
-            // Ако няма GIF, просто показваме името
-            const p = document.createElement('p');
-            p.textContent = animal;
-            resultDiv.appendChild(p);
-          }
-        });
-      }
     }
-
-    // Инициализиране при зареждане на страницата
-    window.onload = () => {
-      initProlog();
-    };
   </script>
 
 </body>
