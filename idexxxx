@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+  <meta charset="UTF-8" />
+  <title>Prolog животни с GIF визуализация</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f0f0f0;
+      text-align: center;
+    }
+    input, button {
+      font-size: 1rem;
+      padding: 8px;
+      margin: 5px;
+      width: 300px;
+      max-width: 100%;
+    }
+    #result {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+    }
+    .animal-gif {
+      width: 150px;
+      border-radius: 10px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.2);
+    }
+    .animal-name {
+      margin-top: 5px;
+      font-weight: bold;
+      font-size: 1rem;
+    }
+    .animal-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 160px;
+      background: white;
+      padding: 10px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Prolog животни с GIF визуализация</h1>
+  <input type="text" id="queryInput" placeholder="Например: is_mammal(X)" />
+  <button onclick="runQuery()">Търси</button>
+
+  <div id="result"></div>
+
+  <!-- Включваме Tau Prolog от CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/tau-prolog@0.3.1/modules/core.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tau-prolog@0.3.1/modules/lists.js"></script>
+  <script>
+    // Пролог знание база
+    const prologCode = `
+      animal(elephant).
+      animal(lion).
+      animal(crocodile).
+      animal(dog).
+      animal(cat).
+      animal(whale).
+
+      is_mammal(X) :- animal(X), member(X, [elephant, lion, dog, cat, whale]).
+      is_big(X) :- member(X, [elephant, lion, crocodile, whale]).
+      is_predator(X) :- member(X, [lion, crocodile, dog, cat]).
+    `;
+
+    // GIF анимации за животните
+    const animalAnimations = {
+      elephant: 'https://media.giphy.com/media/26u4b45b8KlgAB7iM/giphy.gif',
+      lion: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',
+      crocodile: 'https://media.giphy.com/media/3o7aD4jH0tMHoed19W/giphy.gif',
+      dog: 'https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif',
+      cat: 'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif',
+      whale: 'https://media.giphy.com/media/3o6ZsVv8gq5Rpq4GTC/giphy.gif',
+    };
+
+    // Инициализиране на Prolog сесия
+    let session = null;
+
+    function initProlog() {
+      session = pl.create();
+      session.consult(prologCode, {
+        success: () => console.log('Prolog loaded'),
+        error: (err) => console.error(err)
+      });
+    }
+
+    // Изпълнение на заявка
+    function runQuery() {
+      const query = document.getElementById('queryInput').value.trim();
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = 'Търсене...';
+
+      if (!query) {
+        resultDiv.innerHTML = 'Моля, въведи валидна Prolog заявка.';
+        return;
+      }
+
+      // Почиства предишната сесия и създава нова
+      initProlog();
+
+      session.query(query, {
+        success: () => {
+          getAllAnswers([]);
+        },
+        error: (err) => {
+          resultDiv.innerHTML = 'Грешка при заявката: ' + err.toString();
+        }
+      });
+
+      // Рекурсивно взимане на всички решения
+      function getAllAnswers(acc) {
+        session.answer({
+          success: (answer) => {
+            // Вземаме стойността на X от отговора
+            const X = answer.lookup('X');
+            if (X) {
+              // Конвертираме Prolog атом в string
+              const animalName = X.id || X.toString();
+              acc.push(animalName);
+            }
+            getAllAnswers(acc);
+          },
+          fail: () => {
+            displayResults(acc);
+          },
+          error: (err) => {
+            resultDiv.innerHTML = 'Грешка при обработка: ' + err.toString();
+          },
+          limit: () => {
+            resultDiv.innerHTML = 'Достигнат лимит за отговори.';
+          }
+        });
+      }
+
+      // Показва резултатите с GIF
+      function displayResults(animals) {
+        if (animals.length === 0) {
+          resultDiv.innerHTML = '<p>Няма намерени животни за тази заявка.</p>';
+          return;
+        }
+
+        // Премахваме дубликатите
+        const uniqueAnimals = [...new Set(animals)];
+
+        resultDiv.innerHTML = '';
+
+        uniqueAnimals.forEach(animal => {
+          const gif = animalAnimations[animal];
+          if (gif) {
+            const card = document.createElement('div');
+            card.className = 'animal-card';
+            card.innerHTML = `<img src="${gif}" alt="${animal}" class="animal-gif" /><div class="animal-name">${animal}</div>`;
+            resultDiv.appendChild(card);
+          } else {
+            // Ако няма GIF, просто показваме името
+            const p = document.createElement('p');
+            p.textContent = animal;
+            resultDiv.appendChild(p);
+          }
+        });
+      }
+    }
+
+    // Инициализиране при зареждане на страницата
+    window.onload = () => {
+      initProlog();
+    };
+  </script>
+
+</body>
+</html>
