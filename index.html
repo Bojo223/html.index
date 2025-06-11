@@ -2,132 +2,163 @@
 <html lang="bg">
 <head>
   <meta charset="UTF-8" />
-  <title>Животни с JS логика и GIF</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prolog животни с анимирани GIF</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #fafafa;
+      font-family: 'Arial', sans-serif;
+      max-width: 720px;
+      margin: 40px auto;
+      background-color: #eef6fb;
+      color: #222;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.12);
       text-align: center;
     }
-    input, button {
-      font-size: 1rem;
-      padding: 8px;
-      margin: 5px;
-      width: 300px;
-      max-width: 100%;
+    textarea {
+      width: 95%;
+      max-width: 650px;
+      height: 130px;
+      font-family: monospace;
+      font-size: 15px;
+      margin-top: 15px;
+      border: 2px solid #3399ff;
+      border-radius: 7px;
+      padding: 10px;
+      resize: vertical;
+      background: #f0f8ff;
+      color: #222;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px 30px;
+      font-size: 18px;
+      background-color: #3399ff;
+      border: none;
+      border-radius: 9px;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #1e6fcc;
     }
     #result {
-      margin-top: 20px;
+      margin-top: 25px;
+      font-size: 20px;
+      font-weight: 600;
+      color: #004080;
+      min-height: 35px;
+    }
+    .animal-display {
+      margin-top: 35px;
+      min-height: 180px;
       display: flex;
-      flex-wrap: wrap;
       justify-content: center;
-      gap: 15px;
+      align-items: center;
+      background: #d9eefe;
+      border-radius: 15px;
+      box-shadow: 0 0 12px #a3c6f9;
     }
     .animal-gif {
-      width: 150px;
-      border-radius: 10px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.2);
-    }
-    .animal-name {
-      margin-top: 5px;
-      font-weight: bold;
-      font-size: 1rem;
-    }
-    .animal-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 160px;
-      background: white;
-      padding: 10px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 200px;
+      border-radius: 14px;
+      box-shadow: 0 0 12px #1a73e8;
     }
   </style>
 </head>
 <body>
 
-  <h1>Животни с JavaScript логика и GIF визуализация</h1>
-  <input type="text" id="queryInput" placeholder="Въведи заявка: is_mammal, is_big, is_predator" />
-  <button onclick="runQuery()">Търси</button>
-
+  <h1>Prolog логика за животни с GIF визуализация</h1>
+  
+  <p>
+    Въведете Prolog заявка за животно. Ако има резултат, ще видите подходяща анимация.
+  </p>
+  
+  <textarea id="prolog-input">
+// Примерни заявки:
+is_flying(X).
+is_domestic(X).
+is_reptile(X).
+  </textarea><br />
+  <button onclick="runProlog()">Стартирай Prolog</button>
+  
   <div id="result"></div>
-
+  <div class="animal-display" id="animal-animation"></div>
+  
+  <script src="https://unpkg.com/tau-prolog"></script>
   <script>
-    // Данни за животните
-    const animals = ['elephant', 'lion', 'crocodile', 'dog', 'cat', 'whale'];
+    const session = pl.create();
 
-    // Правила, подобни на Prolog правила
-    function is_mammal(animal) {
-      return ['elephant', 'lion', 'dog', 'cat', 'whale'].includes(animal);
-    }
+    // Промяната е в базата знание с нови животни и правила
+    const knowledge = `
+      animal(eagle).
+      animal(dog).
+      animal(crocodile).
+      animal(parrot).
+      animal(cat).
 
-    function is_big(animal) {
-      return ['elephant', 'lion', 'crocodile', 'whale'].includes(animal);
-    }
+      flying(eagle).
+      flying(parrot).
 
-    function is_predator(animal) {
-      return ['lion', 'crocodile', 'dog', 'cat'].includes(animal);
-    }
+      domestic(dog).
+      domestic(cat).
+      
+      reptile(crocodile).
 
-    // GIF за животните
+      is_flying(X) :- flying(X).
+      is_domestic(X) :- domestic(X).
+      is_reptile(X) :- reptile(X).
+    `;
+
+    session.consult(knowledge);
+
     const animalAnimations = {
-      elephant: 'https://media.giphy.com/media/26u4b45b8KlgAB7iM/giphy.gif',
-      lion: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',
-      crocodile: 'https://media.giphy.com/media/3o7aD4jH0tMHoed19W/giphy.gif',
-      dog: 'https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif',
-      cat: 'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif',
-      whale: 'https://media.giphy.com/media/3o6ZsVv8gq5Rpq4GTC/giphy.gif',
+      eagle: '<img src="https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif" class="animal-gif" alt="Орел" />',
+      dog: '<img src="https://media.giphy.com/media/3oEduQAsYcJKQH2XsI/giphy.gif" class="animal-gif" alt="Куче" />',
+      crocodile: '<img src="https://media.giphy.com/media/vFKqnCdLPNOKc/giphy.gif" class="animal-gif" alt="Крокодил" />',
+      parrot: '<img src="https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif" class="animal-gif" alt="Папагал" />',
+      cat: '<img src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif" class="animal-gif" alt="Котка" />'
     };
 
-    // Изпълнява заявката
-    function runQuery() {
-      const query = document.getElementById('queryInput').value.trim();
-      const resultDiv = document.getElementById('result');
-      resultDiv.innerHTML = 'Търсене...';
+    function runProlog() {
+      const input = document.getElementById("prolog-input").value.trim();
+      const resultDiv = document.getElementById("result");
+      const animDiv = document.getElementById("animal-animation");
 
-      if (!query) {
-        resultDiv.innerHTML = 'Моля, въведи заявка.';
+      resultDiv.innerHTML = "";
+      animDiv.innerHTML = "";
+
+      if(input === "") {
+        resultDiv.innerHTML = "<p>Моля, въведете заявка.</p>";
         return;
       }
 
-      // Функция за филтриране според заявката
-      let filterFunc;
+      session.query(input);
+      session.answers(answer => {
+        if (answer === false) {
+          if(resultDiv.innerHTML === "") {
+            resultDiv.innerHTML = "<p>Няма резултати за заявката.</p>";
+          }
+          return;
+        }
+        const answerStr = pl.format_answer(answer);
+        if (answerStr === "false.") {
+          resultDiv.innerHTML = "<p>Няма резултати за тази заявка.</p>";
+          return;
+        }
+        resultDiv.innerHTML += `<p>${answerStr}</p>`;
 
-      if (query === 'is_mammal' || query === 'is_mammal(X)') {
-        filterFunc = is_mammal;
-      } else if (query === 'is_big' || query === 'is_big(X)') {
-        filterFunc = is_big;
-      } else if (query === 'is_predator' || query === 'is_predator(X)') {
-        filterFunc = is_predator;
-      } else {
-        resultDiv.innerHTML = 'Невалидна заявка. Използвай: is_mammal, is_big, is_predator.';
-        return;
-      }
-
-      // Филтриране на животните
-      const filteredAnimals = animals.filter(filterFunc);
-
-      if (filteredAnimals.length === 0) {
-        resultDiv.innerHTML = 'Няма животни, отговарящи на заявката.';
-        return;
-      }
-
-      // Показваме резултатите с GIF
-      resultDiv.innerHTML = '';
-
-      filteredAnimals.forEach(animal => {
-        const gif = animalAnimations[animal];
-        if (gif) {
-          const card = document.createElement('div');
-          card.className = 'animal-card';
-          card.innerHTML = `<img src="${gif}" alt="${animal}" class="animal-gif" /><div class="animal-name">${animal}</div>`;
-          resultDiv.appendChild(card);
-        } else {
-          const p = document.createElement('p');
-          p.textContent = animal;
-          resultDiv.appendChild(p);
+        // Извличаме животното от отговора
+        const match = answerStr.match(/X = (\w+)/);
+        if (match) {
+          const animal = match[1];
+          if (animalAnimations[animal]) {
+            animDiv.innerHTML = animalAnimations[animal];
+          } else {
+            animDiv.innerHTML = "<p>Няма GIF за това животно.</p>";
+          }
         }
       });
     }
